@@ -1,5 +1,5 @@
 ## Project 1 - Blog Post
-Project developed to allow us try to understand what features can be added to Boston Airbnb units in order to increase the unit prices.
+Project developed to allow us try to understand what features can be added to Boston Airbnb units in order to increase the unit prices. You can see the public post [here](https://pedrogandola.blogspot.com/2020/12/how-to-increase-airbnb-unit-price.html).
 
 ### Structure
 - **AmenitiesAnalysis.ipynb**: Code used to do the Amenities/Price analysis.

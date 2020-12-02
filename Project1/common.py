@@ -1,3 +1,34 @@
+from pandas.api.types import is_numeric_dtype
+
+def fill_nans_with_mean(df, columns):
+    """
+    Fills the given columns NaN values with the mean of the column.
+    """
+    for col in columns:
+        if col in df.columns:
+            df[col].fillna((df[col].mean()), inplace=True)
+    return df
+
+def fill_nans_with_mode(df, columns):
+    """
+    Fills the given columns NaN values with the mode of the column.
+    """
+    for col in columns:
+        if col in df.columns:
+            df[col].fillna((df[col].mode()), inplace=True)
+    return df
+
+def find_numeric_columns_with_nans(df):
+    """
+    Returns all numeric columns that have NaN values.
+    """
+    cols_with_nans = [] 
+    for col in df.columns:
+        if is_numeric_dtype(df[col]) and df[col].isnull().values.any():
+            cols_with_nans.append(col) 
+    return cols_with_nans
+
+
 def clean_price(df):
     """
     Cleans price field column and casts to float type. 
@@ -21,6 +52,9 @@ def create_pricing_groups(df):
     return df['price'].apply(lambda price: price_range(price, q25, q40, q65, q75))
     
 def price_range(price, q25, q40, q65, q75):
+    """
+    Given a price and the repecting price quantiles it returns a string with the pricing group.
+    """
     if (price > 0 and price < q25):
         return 'low'
     elif (price >= q25 and price < q40):

@@ -1,6 +1,10 @@
 import sys
+from os.path import dirname, join, abspath
+
 import pandas as pd
-from sqlalchemy import create_engine
+
+sys.path.insert(0, abspath(join(dirname(__file__), '..')))
+from data.dao_sqlite import SQLiteDao
 
 
 def load_data(messages_filepath,
@@ -84,16 +88,13 @@ def save_data(df, database_filename, table_name='categorized_messages'):
     @param table_name where the data shall be stored.
     """
     conn_str = 'sqlite:///{}'.format(database_filename)
-    engine = create_engine(conn_str)
     try:
-        df.to_sql(table_name, engine, index=False)
+        dao = SQLiteDao(conn_str)
+        dao.store_messages(df)
         print('Stored, columns:[{}], rows:[{}]!'.format(df.shape[1], df.shape[0]))
     except Exception as e:
         print('Unable to store the data into [{}] database.'.format(database_filename))
         raise e
-    finally:
-        engine.dispose()
-        print('DB: [{}] engine disposed.'.format(database_filename))
 
 
 def main():

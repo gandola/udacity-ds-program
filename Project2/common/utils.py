@@ -5,7 +5,7 @@ from nltk.stem import WordNetLemmatizer
 
 def tokenize(text):
     """
-    Tokenizes the given text appling the following transformations:
+    Tokenizes the given text applying the following transformations:
     - Clean non-alphanumeric chars
     - All chars are lowered
     - All words are trimmed
@@ -20,7 +20,7 @@ def tokenize(text):
 
     clean_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tok = lemmatizer.lemmatize(tok.lower().strip())
         clean_tokens.append(clean_tok)
 
     return clean_tokens

@@ -1,21 +1,19 @@
-import sys
-sys.path.append('../')
-
 import json
-import plotly
-import pandas as pd
+import sys
+from os.path import dirname, join, abspath
 
 from flask import Flask
 from flask import render_template, request
 from sklearn.externals import joblib
-from sqlalchemy import create_engine
+
+sys.path.insert(0, abspath(join(dirname(__file__), '..')))
+from data.dao_sqlite import SQLiteDao
 from common.utils import tokenize
 
 app = Flask(__name__, static_url_path='/static')
 
-# load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('categorized_messages', engine)
+# Data Access Object
+dao = SQLiteDao('sqlite:///../data/DisasterResponse.db')
 
 # load model
 model = joblib.load("../models/classifier.pkl")
@@ -26,14 +24,12 @@ def counts_by_genre():
     """
     Gets number of message by genre API.
     """
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-
+    genre_names, genre_counts = dao.get_counts_by_genre()
     data = {
         'genre_names': genre_names,
         'genre_counts': genre_counts
     }
-    return json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps(data)
 
 
 @app.route('/countsByCategory')
@@ -41,16 +37,7 @@ def counts_by_category():
     """
     Gets number of message by category.
     """
-    category_cols = [col for col in df.columns.tolist() if col not in ['id', 'message', 'original', 'genre']]
-    cat_df = df[category_cols]
-    results = cat_df[cat_df == 1].count()
-
-    categories = []
-    values = []
-    for index, value in results.items():
-        categories.append(index)
-        values.append(value)
-
+    categories, values = dao.get_counts_by_category()
     data = {
         'categories': categories,
         'values': values
@@ -61,8 +48,14 @@ def counts_by_category():
 # web page that handles user query and displays model results
 @app.route('/classify')
 def classify():
+    """
+    API that allows to classify a message given by request param named "query"
+    @return: classification results.
+    """
     # save user input in query
     query = request.args.get('query', '')
+
+    df = dao.get_all_messages()
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
@@ -76,24 +69,6 @@ def classify():
     )
 
 
-@app.route('/')
-@app.route('/index')
-def index():
-    # save user input in query
-    query = request.args.get('query', '')
-
-    # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
-    classification_results = dict(zip(df.columns[4:], classification_labels))
-
-    # This will render the go.html Please see that file. 
-    return render_template(
-        'base.html',
-        query=query,
-        classification_result=classification_results
-    )
-
-
 @app.route('/genres')
 def genres_page():
     return render_template('genres.html')
@@ -102,6 +77,12 @@ def genres_page():
 @app.route('/categories')
 def categories_page():
     return render_template('categories.html')
+
+
+@app.route('/')
+@app.route('/index')
+def index():
+    return render_template('base.html')
 
 
 def main():

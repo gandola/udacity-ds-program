@@ -1,19 +1,18 @@
-import sys
-
-sys.path.append('../')
-import pandas as pd
 import pickle
+import sys
+from os.path import dirname, join, abspath
 
-from sqlalchemy import create_engine
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
+from sklearn.pipeline import Pipeline
+
+sys.path.insert(0, abspath(join(dirname(__file__), '..')))
 from common.utils import tokenize
+from data.dao_sqlite import SQLiteDao
 
 
 def load_data(database_filepath, table_name='categorized_messages'):
@@ -25,9 +24,9 @@ def load_data(database_filepath, table_name='categorized_messages'):
     names that represents the categories.
     """
     conn_str = 'sqlite:///{}'.format(database_filepath)
-    engine = create_engine(conn_str)
     try:
-        df = pd.read_sql('SELECT * FROM {}'.format(table_name), engine)
+
+        df = SQLiteDao(conn_str).get_all_messages()
         print(df.shape)
         category_cols = [col for col in df.columns.tolist() if col not in ['id', 'message', 'original', 'genre']]
         x = df.message.values
@@ -36,9 +35,6 @@ def load_data(database_filepath, table_name='categorized_messages'):
     except Exception as e:
         print('Unable to load data from [{}] database.'.format(database_filepath))
         raise e
-    finally:
-        engine.dispose()
-        print('DB: [{}] engine disposed.'.format(database_filepath))
 
 
 def build_model():

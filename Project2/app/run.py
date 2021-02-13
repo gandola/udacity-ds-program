@@ -1,29 +1,17 @@
+import sys
+sys.path.append('../')
+
 import json
 import plotly
 import pandas as pd
 
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-
 from flask import Flask
-from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
+from flask import render_template, request
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
+from common.utils import tokenize
 
-
-app = Flask(__name__)
-
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+app = Flask(__name__, static_url_path='/static')
 
 # load data
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
@@ -33,52 +21,48 @@ df = pd.read_sql_table('categorized_messages', engine)
 model = joblib.load("../models/classifier.pkl")
 
 
-# index webpage displays cool visuals and receives user input text for model
-@app.route('/')
-@app.route('/index')
-def index():
-    
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+@app.route('/countsByGenre')
+def counts_by_genre():
+    """
+    Gets number of message by genre API.
+    """
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
 
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        }
-    ]
-    
-    # encode plotly graphs in JSON
-    ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
-    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
-    # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    data = {
+        'genre_names': genre_names,
+        'genre_counts': genre_counts
+    }
+    return json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+
+
+@app.route('/countsByCategory')
+def counts_by_category():
+    """
+    Gets number of message by category.
+    """
+    category_cols = [col for col in df.columns.tolist() if col not in ['id', 'message', 'original', 'genre']]
+    cat_df = df[category_cols]
+    results = cat_df[cat_df == 1].count()
+
+    categories = []
+    values = []
+    for index, value in results.items():
+        categories.append(index)
+        values.append(value)
+
+    data = {
+        'categories': categories,
+        'values': values
+    }
+    return json.dumps(data)
 
 
 # web page that handles user query and displays model results
-@app.route('/go')
-def go():
+@app.route('/classify')
+def classify():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
@@ -86,10 +70,38 @@ def go():
 
     # This will render the go.html Please see that file. 
     return render_template(
-        'go.html',
+        'classify.html',
         query=query,
         classification_result=classification_results
     )
+
+
+@app.route('/')
+@app.route('/index')
+def index():
+    # save user input in query
+    query = request.args.get('query', '')
+
+    # use model to predict classification for query
+    classification_labels = model.predict([query])[0]
+    classification_results = dict(zip(df.columns[4:], classification_labels))
+
+    # This will render the go.html Please see that file. 
+    return render_template(
+        'base.html',
+        query=query,
+        classification_result=classification_results
+    )
+
+
+@app.route('/genres')
+def genres_page():
+    return render_template('genres.html')
+
+
+@app.route('/categories')
+def categories_page():
+    return render_template('categories.html')
 
 
 def main():

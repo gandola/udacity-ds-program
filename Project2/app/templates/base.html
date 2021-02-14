@@ -32,6 +32,16 @@
         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <div class="container">
           {% block content %}
+          <div class="page-header">
+            <h1 class="text-center">Distribution of messages by genre</h1>
+            <div id="genres-counts"></div>
+          </div>
+          <script src="static/js/genres.js"></script>
+          <div class="page-header">
+            <h1 class="text-center">Distribution of messages by category</h1>
+            <div id="category-counts"></div>
+            <script src="static/js/categories.js"></script>
+          </div>
           {% endblock %}
         </div>
       </div>
@@ -39,4 +49,5 @@
   </div>
   {% include 'footer.html' %}
 </body>
+
 </html>

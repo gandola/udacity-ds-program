@@ -58,10 +58,22 @@ def _resolve_categories(categories_df):
     categories.columns = category_colnames
     for column in categories:
         # set each value to be the last character of the string
-        categories[column] = categories[column].apply(lambda value: value.split('-')[1])
+        categories[column] = categories[column].apply(lambda value: _normalize_category(value.split('-')[1]))
         # convert column from string to numeric
         categories[column] = categories[column].astype("int")
     return categories
+
+
+def _normalize_category(value):
+    """
+    Ensures that the category value is binary.
+    If the value is higher than 1 then it is transformed to 1.
+    @param value string associated to the category.
+    @return normalized string to 0 or 1.
+    """
+    if int(value) > 1:
+        return "1"
+    return value
 
 
 def _drop_duplicates(df):
